@@ -4,8 +4,8 @@ Useful tools to work with [Rlocker project API](https://github.com/jimdevops19/r
     
 It consists of two main modules:
 
-- `indextools`: tools to work with Elastic indices
-- `doctools`: tools to work with Elastic documents
+- `rlockertools.resourcelocker`: Utilities to work with Lockable Resources, lock and release
+- `rlockertools.exceptions`: Custom Exceptions for lockable resources
 
 # Installation
  
