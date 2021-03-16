@@ -8,7 +8,7 @@ with open('HISTORY.md') as history_file:
 
 setup_args = dict(
     name='rlockertools',
-    version='0.1.1',
+    version='0.1.4',
     description='Useful tools to interact with Resource Locker Project',
     long_description_content_type="text/markdown",
     long_description=README + '\n\n' + HISTORY,
@@ -23,7 +23,6 @@ setup_args = dict(
 
 install_requires = [
     'requests',
-    'pprint',
 ]
 
 if __name__ == '__main__':

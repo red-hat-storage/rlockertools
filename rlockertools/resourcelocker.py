@@ -1,7 +1,7 @@
-import requests
-import pprint as pp
-from rlockertools.exceptions import BadSearchStringError
 from requests.exceptions import ConnectionError
+from rlockertools.exceptions import BadRequestError
+from rlockertools.utils import prettify_output
+import requests
 import json
 import time
 
@@ -38,7 +38,7 @@ class ResourceLocker:
             #Raise Connection Error if no 200
             raise ConnectionError
 
-    def retrieve(self, search_string):
+    def __retrieve(self, search_string):
         '''
         Method that will return one resource locker Dict object at a time
         :param search_string: String to search by, could be the name or the label of the resource
@@ -50,7 +50,7 @@ class ResourceLocker:
 
 
 
-    def lock(self, resource, signoff):
+    def __lock(self, resource, signoff):
         '''
         Method that will lock the requested resource
         :param resource: Resource to lock
@@ -83,22 +83,26 @@ class ResourceLocker:
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
         if req.status_code == 200:
-            pp.pprint(f"Released {resource['name']} successfully!")
+            print(f"Released {resource['name']} successfully!")
             return req
         else:
             print(f"There were some errors from the Resource Locker server:")
-            pp.pprint(req.text)
+            prettify_output(req.text)
 
     def all(self):
         '''
         Display all the resources
-        :return:
+        :return: Response in Dictionary
         '''
         req = requests.get(self.endpoints['resources'], headers=self.headers)
         if req.status_code == 200:
             #json.loads returns it to a dictionary:
             req_dict = json.loads(req.text.encode('utf8'))
             return req_dict
+        else:
+            prettify_output(req.text)
+            raise BadRequestError
+
 
     def filter_lockable_resource(self, lambda_expression):
         '''
@@ -120,7 +124,7 @@ class ResourceLocker:
         :return:
         '''
         while True:
-            retrieve_attempt = self.retrieve(search_string)
+            retrieve_attempt = self.__retrieve(search_string)
             if retrieve_attempt.status_code == 206:
                 print(f"Resources with the requested search_string ({search_string}) are locked! \n"
                       f"Waiting {interval} seconds before next try!")
@@ -131,7 +135,7 @@ class ResourceLocker:
                       "Trying to lock...")
                 lockable_resource_obj = json.loads(retrieve_attempt.text.encode('utf8'))
 
-                attempt_lock = self.lock(resource=lockable_resource_obj, signoff=signoff)
+                attempt_lock = self.__lock(resource=lockable_resource_obj, signoff=signoff)
 
                 if attempt_lock.status_code == 200:
                     attempt_lock_obj = json.loads(attempt_lock.text.encode('utf8'))
@@ -139,10 +143,12 @@ class ResourceLocker:
 
                     return attempt_lock_obj
                 else:
-                    print(f"There were some errors from the Resource Locker server:")
-                    pp.pprint(attempt_lock.text)
+                    print(f"There were some errors locking the requested resource:")
+                    prettify_output(attempt_lock.text)
 
-                    raise Exception
+                    raise BadRequestError
 
             else:
-                raise BadSearchStringError
+                print("There were some errors retrieving a free resource:")
+                prettify_output(retrieve_attempt.text)
+                raise BadRequestError
