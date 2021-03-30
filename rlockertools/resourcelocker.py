@@ -1,9 +1,8 @@
-from requests.exceptions import ConnectionError
-from rlockertools.exceptions import BadRequestError
+from requests.exceptions import ConnectionError, ReadTimeout
+from rlockertools.exceptions import BadRequestError, TimeoutReachedForLockingResource
 from rlockertools.utils import prettify_output
 import requests
 import json
-import time
 
 class ResourceLocker:
     def __init__(self, instance_url, token):
@@ -14,7 +13,7 @@ class ResourceLocker:
 
         self.endpoints = {
             'resources'         : f'{self.instance_url}/api/resources',
-            'retrieve_resource' : f'{self.instance_url}/api/resource/retrieve/',
+            'retrieve_resource' : f'{self.instance_url}/api/resource/retrieve_entrypoint/',
             'resource'      : f'{self.instance_url}/api/resource/',
         }
 
@@ -38,15 +37,31 @@ class ResourceLocker:
             #Raise Connection Error if no 200
             raise ConnectionError
 
-    def __retrieve(self, search_string):
+    def retrieve_and_lock(self, search_string, signoff, priority, timeout=None):
         '''
-        Method that will return one resource locker Dict object at a time
-        :param search_string: String to search by, could be the name or the label of the resource
-        :return: Request object
+
+        :param search_string:
+        :param signoff:
+        :param priority:
+        :param timeout:
+        :return:
         '''
         final_endpoint = self.endpoints['retrieve_resource'] + search_string
-        req = requests.get(final_endpoint, headers=self.headers)
-        return req
+        data = {
+            "priority" : priority,
+            "signoff" : signoff
+        }
+        data_json = json.dumps(data)
+
+        try:
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json, timeout=timeout)
+            return req
+
+        except ReadTimeout:
+            raise TimeoutReachedForLockingResource
+
+        except:
+            raise
 
 
 
@@ -103,7 +118,6 @@ class ResourceLocker:
             prettify_output(req.text)
             raise BadRequestError
 
-
     def filter_lockable_resource(self, lambda_expression):
         '''
 
@@ -113,42 +127,3 @@ class ResourceLocker:
         :return:
         '''
         return filter(lambda_expression, self.all())
-
-    def queued_lock(self,search_string, signoff, interval=60):
-        '''
-
-        :param search_string: The string to search for when we attempt locking,
-            will try to find by label or name
-        :param signoff: A unique signoff for the resources that are going to be locked
-        :param interval: How much time to wait after each attempt, default is 60
-        :return:
-        '''
-        while True:
-            retrieve_attempt = self.__retrieve(search_string)
-            if retrieve_attempt.status_code == 206:
-                print(f"Resources with the requested search_string ({search_string}) are locked! \n"
-                      f"Waiting {interval} seconds before next try!")
-                time.sleep(interval)
-
-            elif retrieve_attempt.status_code == 200:
-                print(f"Available resource found with name/label : {search_string} \n"
-                      "Trying to lock...")
-                lockable_resource_obj = json.loads(retrieve_attempt.text.encode('utf8'))
-
-                attempt_lock = self.__lock(resource=lockable_resource_obj, signoff=signoff)
-
-                if attempt_lock.status_code == 200:
-                    attempt_lock_obj = json.loads(attempt_lock.text.encode('utf8'))
-                    print(f"Locked {attempt_lock_obj['name']} successfully!")
-
-                    return attempt_lock_obj
-                else:
-                    print(f"There were some errors locking the requested resource:")
-                    prettify_output(attempt_lock.text)
-
-                    raise BadRequestError
-
-            else:
-                print("There were some errors retrieving a free resource:")
-                prettify_output(retrieve_attempt.text)
-                raise BadRequestError
