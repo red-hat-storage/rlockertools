@@ -14,7 +14,8 @@ class ResourceLocker:
         self.endpoints = {
             'resources'         : f'{self.instance_url}/api/resources',
             'retrieve_resource' : f'{self.instance_url}/api/resource/retrieve_entrypoint/',
-            'resource'      : f'{self.instance_url}/api/resource/',
+            'resource'          : f'{self.instance_url}/api/resource/',
+            'rqueue'            : f'{self.instance_url}/api/rqueue/',
         }
 
         self.headers = {
@@ -59,11 +60,6 @@ class ResourceLocker:
 
         except ReadTimeout:
             raise TimeoutReachedForLockingResource
-
-        except:
-            raise
-
-
 
     def __lock(self, resource, signoff):
         '''
@@ -127,3 +123,12 @@ class ResourceLocker:
         :return:
         '''
         return filter(lambda_expression, self.all())
+
+    def get_lockable_resource(self, lambda_expression):
+        '''
+        Uses next to return the first value only after using the filter_lockable_resource
+            So we don't have to call it each time
+        :param lambda_expression:
+        :return:
+        '''
+        return next(self.filter_lockable_resource(lambda_expression=lambda_expression))
