@@ -16,6 +16,7 @@ class ResourceLocker:
             'retrieve_resource' : f'{self.instance_url}/api/resource/retrieve_entrypoint/',
             'resource'          : f'{self.instance_url}/api/resource/',
             'rqueue'            : f'{self.instance_url}/api/rqueue/',
+            'rqueues'           : f'{self.instance_url}/api/rqueues',
         }
 
         self.headers = {
@@ -132,3 +133,39 @@ class ResourceLocker:
         :return:
         '''
         return next(self.filter_lockable_resource(lambda_expression=lambda_expression))
+
+    def get_current_queue(self):
+        '''
+        Get the latest current queue that is created, without filtering its status,
+            just the latest queue ID
+        :return rqueue JSON object
+        '''
+        req = requests.get(self.endpoints['rqueues'], headers=self.headers)
+        if req.status_code == 200:
+            #json.loads returns it to a dictionary
+            req_dict = json.loads(req.text.encode('utf8'))
+            return req_dict
+        else:
+            print(f"There were some errors from the Resource Locker server:")
+            prettify_output(req.text)
+
+    def abort_queue(self, queue_id, abort_msg=None):
+        '''
+        A method to send a POST request to abort the queue that was created, and expected
+            to have an associated lockable resource
+        We do this from the client side for now.
+        :return: req
+        '''
+        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+            data_json = json.dumps(
+                {
+                    'status' : 'ABORTED',
+                    'description' : abort_msg,
+                }
+            )
+
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            return req
+

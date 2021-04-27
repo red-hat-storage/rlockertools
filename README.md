@@ -22,3 +22,9 @@ git clone https://github.com/jimdevops19/rlockertools.git
 cd rlockertools
 pip install --editable .
 ```
+
+## For publishing new version
+```
+python -m build
+python -m twine upload --repository pypi dist/*
+```
