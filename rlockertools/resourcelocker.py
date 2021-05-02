@@ -39,20 +39,24 @@ class ResourceLocker:
             #Raise Connection Error if no 200
             raise ConnectionError
 
-    def retrieve_and_lock(self, search_string, signoff, priority, timeout=None):
+    def retrieve_and_lock(self, search_string, signoff, priority, link=None, timeout=None):
         '''
 
         :param search_string:
         :param signoff:
         :param priority:
+        :param link:
         :param timeout:
         :return:
         '''
         final_endpoint = self.endpoints['retrieve_resource'] + search_string
         data = {
             "priority" : priority,
-            "signoff" : signoff
+            "signoff" : signoff,
         }
+        if link:
+            data['link'] = link
+
         data_json = json.dumps(data)
 
         try:
