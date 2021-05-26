@@ -4,6 +4,7 @@ from rlockertools.utils import prettify_output
 import requests
 import json
 
+
 class ResourceLocker:
     def __init__(self, instance_url, token):
         self.instance_url = instance_url
@@ -12,16 +13,16 @@ class ResourceLocker:
         self.check_connection()
 
         self.endpoints = {
-            'resources'         : f'{self.instance_url}/api/resources',
-            'retrieve_resource' : f'{self.instance_url}/api/resource/retrieve_entrypoint/',
-            'resource'          : f'{self.instance_url}/api/resource/',
-            'rqueue'            : f'{self.instance_url}/api/rqueue/',
-            'rqueues'           : f'{self.instance_url}/api/rqueues',
+            'resources': f'{self.instance_url}/api/resources',
+            'retrieve_resource': f'{self.instance_url}/api/resource/retrieve_entrypoint/',
+            'resource': f'{self.instance_url}/api/resource/',
+            'rqueue': f'{self.instance_url}/api/rqueue/',
+            'rqueues': f'{self.instance_url}/api/rqueues',
         }
 
         self.headers = {
-          'Content-Type': 'application/json',
-          'Authorization': f'Token {self.token}'
+            'Content-Type': 'application/json',
+            'Authorization': f'Token {self.token}'
         }
 
     def check_connection(self):
@@ -33,10 +34,10 @@ class ResourceLocker:
         '''
         req = requests.get(self.instance_url)
         if req.status_code == 200:
-            print({'CONNECTION' : 'OK'})
+            print({'CONNECTION': 'OK'})
             return
         else:
-            #Raise Connection Error if no 200
+            # Raise Connection Error if no 200
             raise ConnectionError
 
     def retrieve_and_lock(self, search_string, signoff, priority, link=None, timeout=None):
@@ -51,8 +52,8 @@ class ResourceLocker:
         '''
         final_endpoint = self.endpoints['retrieve_resource'] + search_string
         data = {
-            "priority" : priority,
-            "signoff" : signoff,
+            "priority": priority,
+            "signoff": signoff,
         }
         if link:
             data['link'] = link
@@ -80,7 +81,6 @@ class ResourceLocker:
 
         final_endpoint = self.endpoints['resource'] + lockable_resource['name']
         newjson = json.dumps(lockable_resource)
-
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
         return req
@@ -112,7 +112,7 @@ class ResourceLocker:
         '''
         req = requests.get(self.endpoints['resources'], headers=self.headers)
         if req.status_code == 200:
-            #json.loads returns it to a dictionary:
+            # json.loads returns it to a dictionary:
             req_dict = json.loads(req.text.encode('utf8'))
             return req_dict
         else:
@@ -146,7 +146,7 @@ class ResourceLocker:
         '''
         req = requests.get(self.endpoints['rqueues'], headers=self.headers)
         if req.status_code == 200:
-            #json.loads returns it to a dictionary
+            # json.loads returns it to a dictionary
             req_dict = json.loads(req.text.encode('utf8'))
             return req_dict
         else:
@@ -165,11 +165,38 @@ class ResourceLocker:
         if req.status_code == 200:
             data_json = json.dumps(
                 {
-                    'status' : 'ABORTED',
-                    'description' : abort_msg,
+                    'status': 'ABORTED',
+                    'description': abort_msg,
                 }
             )
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
             return req
+
+    def change_queue(self, queue_id, status):
+        '''
+        A method to send a POST request to change the status of the queue.
+        :return: req
+        '''
+        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+            data_json = json.dumps(
+                {
+                    'status': status
+                }
+            )
+
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            return req
+
+        return req
+
+    def get_queues(self, status=None):
+        final_endpoint = self.endpoints['rqueues'] + f'?status={status}' if status else self.endpoints['rqueues']
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+            # json.loads returns it to a dictionary
+            req_dict = json.loads(req.text.encode('utf8'))
+            return req_dict
 
