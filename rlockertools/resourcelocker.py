@@ -130,15 +130,6 @@ class ResourceLocker:
         '''
         return filter(lambda_expression, self.all())
 
-    def get_lockable_resource(self, lambda_expression):
-        '''
-        Uses next to return the first value only after using the filter_lockable_resource
-            So we don't have to call it each time
-        :param lambda_expression:
-        :return:
-        '''
-        return next(self.filter_lockable_resource(lambda_expression=lambda_expression))
-
     def abort_queue(self, queue_id, abort_msg=None):
         '''
         A method to send a POST request to abort the queue that was created, and expected
@@ -159,7 +150,7 @@ class ResourceLocker:
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
             return req
 
-    def change_queue(self, queue_id, status):
+    def change_queue(self, queue_id, status, description=None):
         '''
         A method to send a POST request to change the status of the queue.
         :return: req
@@ -167,11 +158,14 @@ class ResourceLocker:
         final_endpoint = self.endpoints['rqueue'] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
-            data_json = json.dumps(
-                {
-                    'status': status
-                }
-            )
+
+            data = {
+                "status" : status,
+            }
+            if description:
+                data['description'] = description
+
+            data_json = json.dumps(data)
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
             return req
@@ -231,3 +225,41 @@ class ResourceLocker:
             else:
                 raise Exception("Timeout Reached! \n"
                                 f"Status of the queue is not {status}!")
+
+
+    def get_lockable_resources(self, free_only=True, label_matches=None, name=None):
+        # Lets first design the final endpoint:
+        final_endpoint = self.endpoints['resources'] + f'?free_only={str(free_only).lower()}&'
+        if label_matches:
+            final_endpoint = f"{final_endpoint}label_matches={label_matches}"
+        if name:
+            final_endpoint = f"{final_endpoint}name={name}"
+
+
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+            # json.loads returns it to a dictionary
+            req_dict = json.loads(req.text.encode('utf8'))
+            return req_dict
+
+        return req
+
+    def lock_resource(self, resource, signoff, link=None):
+        '''
+        Method that will lock the requested resource
+        :param resource: Resource to lock
+        :param signoff: A message to write when the requested resource
+            is about to lock
+        :return: Response after the PUT request
+        '''
+        lockable_resource = dict(resource)
+        lockable_resource['is_locked'] = True
+        lockable_resource['signoff'] = signoff
+        if link:
+            lockable_resource['link'] = link
+
+        final_endpoint = self.endpoints['resource'] + lockable_resource['name']
+        newjson = json.dumps(lockable_resource)
+
+        req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        return req
