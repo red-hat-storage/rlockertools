@@ -217,7 +217,7 @@ class ResourceLocker:
                 raise Exception(f'Queue {queue_id} does not exist on the server!')
 
             if queue_to_check.get('status') == status:
-                return True
+                return queue_to_check
 
             else:
                 print(f"{queue_id} is not in status {status} yet"
