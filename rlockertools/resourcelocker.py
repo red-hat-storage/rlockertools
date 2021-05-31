@@ -3,6 +3,7 @@ from rlockertools.exceptions import BadRequestError, TimeoutReachedForLockingRes
 from rlockertools.utils import prettify_output
 import requests
 import json
+import time
 
 
 class ResourceLocker:
@@ -40,7 +41,7 @@ class ResourceLocker:
             # Raise Connection Error if no 200
             raise ConnectionError
 
-    def retrieve_and_lock(self, search_string, signoff, priority, link=None, timeout=None):
+    def find_resource(self, search_string, signoff, priority, link=None, timeout=None):
         '''
 
         :param search_string:
@@ -138,21 +139,6 @@ class ResourceLocker:
         '''
         return next(self.filter_lockable_resource(lambda_expression=lambda_expression))
 
-    def get_current_queue(self):
-        '''
-        Get the latest current queue that is created, without filtering its status,
-            just the latest queue ID
-        :return rqueue JSON object
-        '''
-        req = requests.get(self.endpoints['rqueues'], headers=self.headers)
-        if req.status_code == 200:
-            # json.loads returns it to a dictionary
-            req_dict = json.loads(req.text.encode('utf8'))
-            return req_dict
-        else:
-            print(f"There were some errors from the Resource Locker server:")
-            prettify_output(req.text)
-
     def abort_queue(self, queue_id, abort_msg=None):
         '''
         A method to send a POST request to abort the queue that was created, and expected
@@ -200,3 +186,48 @@ class ResourceLocker:
             req_dict = json.loads(req.text.encode('utf8'))
             return req_dict
 
+    def get_queue(self, queue_id):
+        '''
+        Return queue JSONIFIED by the given queue_id
+        :param queue_id:
+        :return:
+        '''
+        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+            return req.json()
+
+        return None
+
+    def wait_until_status(self, queue_id, status,
+                          interval=15, attempts=120, silent=True):
+        '''
+        A method that uses multiple retries until a status of queue is achieved
+        :param queue_id:
+        :param status:
+        :param interval:
+        :param attempts:
+        :param silent: If timeout is reached (attempts * interval), then
+            it will silently return None rather than raising Exception.
+        :return:
+        '''
+        for attempt in range(attempts):
+            queue_to_check = self.get_queue(queue_id)
+            if not queue_to_check:
+                raise Exception(f'Queue {queue_id} does not exist on the server!')
+
+            if queue_to_check.get('status') == status:
+                return True
+
+            else:
+                print(f"{queue_id} is not in status {status} yet"
+                      f"More info about the queue: \n"
+                      f"{self.instance_url}\pendingrequests")
+
+                time.sleep(interval)
+        else:
+            if silent:
+                return None
+            else:
+                raise Exception("Timeout Reached! \n"
+                                f"Status of the queue is not {status}!")
