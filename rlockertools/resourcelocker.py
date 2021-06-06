@@ -4,7 +4,10 @@ from rlockertools.utils import prettify_output
 import requests
 import json
 import time
+import logging
 
+
+logger = logging.getLogger('__name__')
 
 class ResourceLocker:
     def __init__(self, instance_url, token):
@@ -214,7 +217,9 @@ class ResourceLocker:
                 return queue_to_check
 
             else:
-                print(f"{queue_id} is not in status {status} yet"
+                # This needs to log, to automatically stream the output even though the process
+                # is running on CI/CD platforms like Jenkins.
+                logger.info(f"{queue_id} is not in status {status} yet"
                       f"More info about the queue: \n"
                       f"{self.instance_url}\pendingrequests")
 
@@ -227,14 +232,19 @@ class ResourceLocker:
                                 f"Status of the queue is not {status}!")
 
 
-    def get_lockable_resources(self, free_only=True, label_matches=None, name=None):
-        # Lets first design the final endpoint:
-        final_endpoint = self.endpoints['resources'] + f'?free_only={str(free_only).lower()}&'
-        if label_matches:
-            final_endpoint = f"{final_endpoint}label_matches={label_matches}"
-        if name:
-            final_endpoint = f"{final_endpoint}name={name}"
-
+    def get_lockable_resources(
+            self, free_only=True,
+            label_matches=None, name=None, signoff=None
+    ):
+        if not signoff:
+            # Lets first design the final endpoint:
+            final_endpoint = self.endpoints['resources'] + f'?free_only={str(free_only).lower()}&'
+            if label_matches:
+                final_endpoint = f"{final_endpoint}label_matches={label_matches}"
+            if name:
+                final_endpoint = f"{final_endpoint}name={name}"
+        else:
+            final_endpoint = self.endpoints['resources'] + f'?signoff={signoff}'
 
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
