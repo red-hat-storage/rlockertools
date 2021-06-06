@@ -4,10 +4,7 @@ from rlockertools.utils import prettify_output
 import requests
 import json
 import time
-import logging
 
-
-logger = logging.getLogger('__name__')
 
 class ResourceLocker:
     def __init__(self, instance_url, token):
@@ -219,7 +216,7 @@ class ResourceLocker:
             else:
                 # This needs to log, to automatically stream the output even though the process
                 # is running on CI/CD platforms like Jenkins.
-                logger.info(f"{queue_id} is not in status {status} yet"
+                print(f"{queue_id} is not in status {status} yet"
                       f"More info about the queue: \n"
                       f"{self.instance_url}\pendingrequests")
 
