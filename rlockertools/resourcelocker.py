@@ -4,6 +4,7 @@ from rlockertools.utils import prettify_output
 import requests
 import json
 import time
+import pprint as pp
 
 
 class ResourceLocker:
@@ -148,7 +149,12 @@ class ResourceLocker:
             )
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            pp.pprint(req.json())
             return req
+
+        print(f"Something went wrong aborting the {queue_id} \n")
+        pp.pprint(req.json())
+        return req
 
     def change_queue(self, queue_id, status, description=None):
         '''
@@ -168,8 +174,11 @@ class ResourceLocker:
             data_json = json.dumps(data)
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            pp.pprint(req.json())
             return req
 
+        print(f"Something went wrong changing {queue_id} \n")
+        pp.pprint(req.json())
         return req
 
     def get_queues(self, status=None):
@@ -195,7 +204,7 @@ class ResourceLocker:
 
     def wait_until_finished(
             self, queue_id, interval=15,
-            attempts=120, silent=True, abort_on_timeout=True,
+            attempts=120, silent=False, abort_on_timeout=True,
     ):
         '''
         A method that uses multiple retries until a status of queue is achieved
@@ -212,65 +221,74 @@ class ResourceLocker:
 
         :return queue as JSON response:
         '''
-        expected_status = 'FINISHED'
-        print(
-            f"Waiting until status {expected_status} \n"
-            "If the queue is in INITIALIZING state for a while, "
-            "be sure to check if your queue service is running! \n"
-        )
-        for attempt in range(attempts):
-            queue_to_check = self.get_queue(queue_id)
-            if not queue_to_check:
-                raise Exception(
-                    f'Queue {queue_id} does not exist on the server!'
-                    'Error is not recoverable, raising Exception'
-                )
-
-            queue_status = queue_to_check.get('status')
-            if queue_status == expected_status:
-                return queue_to_check
-
-            else:
-                # This needs to log, to automatically stream the output even though the process
-                # is running on CI/CD platforms like Jenkins.
-                # Therefore, please run the entire script that uses this function with python -u
-                if queue_status in ['INITIALIZING', 'PENDING']:
-                    print(
-                        f"Queue 97 {queue_id} is {queue_status} \n"
-                        f"More info about the queue: \n"
-                        f"{self.instance_url}\pendingrequests"
+        try:
+            expected_status = 'FINISHED'
+            total_timeout_description = f"{attempts * interval}"
+            print(
+                f"Waiting until status {expected_status}, timeout is set to {total_timeout_description} seconds! \n"
+                "If the queue is in INITIALIZING state for a while, "
+                "be sure to check if your queue service is running! \n"
+            )
+            for attempt in range(attempts):
+                queue_to_check = self.get_queue(queue_id)
+                if not queue_to_check:
+                    raise Exception(
+                        f'Queue {queue_id} does not exist on the server! \n'
+                        'Error is not recoverable, raising Exception \n'
+                        'Please check the logs of the Django application! \n'
+                        'Possible solutions: \n'
+                        ' - Please double check your search_string, that it matches to an existing label or name'
                     )
-                elif queue_status in ['ABORTED', 'FAILED']:
-                    err_msg = "Queue did NOT finish successfully \n" \
-                              f"Error is: \n {queue_to_check}"
-                    if silent:
-                        print(
-                            err_msg,
-                            "Timeout reached, "
-                            "silent=true provided so no exception is raised"
-                        )
-                        return None
-                    else:
-                        raise Exception(err_msg)
 
-                time.sleep(interval)
-        else:
-            if abort_on_timeout:
-                self.abort_queue(
-                    queue_id=queue_id,
-                    abort_msg="Timeout Reached for this queue. \n"
-                              f"Attempts: {attempts} \n"
-                              f"Interval: {interval} seconds \n"
-                              f"Time Waited: {attempts} * {interval} seconds"
-                )
-            if silent:
-                print("Timeout reached, silent=true provided so no exception is raised")
-                return None
+                queue_status = queue_to_check.get('status')
+                if queue_status == expected_status:
+                    return queue_to_check
+
+                else:
+                    # This needs to log, to automatically stream the output even though the process
+                    # is running on CI/CD platforms like Jenkins.
+                    # Therefore, please run the entire script that uses this function with python -u
+                    if queue_status in ['INITIALIZING', 'PENDING']:
+                        print(
+                            f"Queue {queue_id} is {queue_status} \n"
+                            f"More info about the queue: \n"
+                            f"{self.instance_url}\pendingrequests"
+                        )
+                    elif queue_status in ['ABORTED', 'FAILED']:
+                        err_msg = "Queue did NOT finish successfully \n" \
+                                  f"Error is: \n {queue_to_check}"
+                        if silent:
+                            print(
+                                err_msg,
+                                "Timeout reached, "
+                                "silent=true provided so no exception is raised"
+                            )
+                            return None
+                        else:
+                            raise Exception(err_msg)
+
+                    time.sleep(interval)
             else:
-                raise Exception(
-                    "Timeout Reached! \n"
-                    f"Status of the queue is not {expected_status}!"
-                )
+                if abort_on_timeout:
+                    self.abort_queue(
+                        queue_id=queue_id,
+                        abort_msg="Timeout Reached for this queue. \n"
+                                  f"Attempts: {attempts} \n"
+                                  f"Interval: {interval} seconds \n"
+                                  f"Time Waited: {attempts * interval} seconds"
+                    )
+                if silent:
+                    print("Timeout reached, silent=true provided so no exception is raised")
+                    return None
+                else:
+                    raise Exception(
+                        "Timeout Reached! \n"
+                        f"Status of the queue is not {expected_status}!"
+                    )
+        except KeyboardInterrupt:
+            print(f'INTERRUPTED! \n'
+                  f'PLEASE HOLD ON FOR A FEW SECONDS FOR CLEAN ABORTION OF YOUR QUEUE! \n')
+            self.abort_queue(queue_id, abort_msg="Keyboard Interrupt")
 
 
     def get_lockable_resources(
