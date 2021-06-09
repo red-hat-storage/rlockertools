@@ -1,9 +1,10 @@
 import os
+import signal
 import pprint as pp
 from urllib.parse import quote
 from argparse import ArgumentParser
 from rlockertools.resourcelocker import ResourceLocker
-
+import sys
 
 def init_argparser():
     """
@@ -93,7 +94,7 @@ def run(args):
             print(release_attempt.text)
 
     if args.lock:
-        lock_attempt = inst.find_resource(
+        new_queue = inst.find_resource(
             search_string=args.search_string,
             signoff=args.signoff,
             priority=int(args.priority),
@@ -102,8 +103,24 @@ def run(args):
         # We should verify that the resource has been locked by checking
         # if the queue is finished.
         # timeout is -> attempts * interval
+
+        abort_action = inst.abort_queue
+        abort_action_args = {
+            "queue_id"  : new_queue.json().get('id'),
+            "abort_msg" : "Queue has been aborted in the middle of a CI/CD Pipeline \n"
+                          "or during manual execution."
+        }
+
+        def signal_handler(sig, frame):
+            abort_action(**abort_action_args)
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGBREAK, signal_handler)
+
         verify_lock = inst.wait_until_finished(
-            queue_id=lock_attempt.json().get('id'),
+            queue_id=new_queue.json().get('id'),
             interval=args.interval,
             attempts=args.attempts,
             silent=False,
