@@ -116,7 +116,6 @@ def run(args):
 
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGBREAK, signal_handler)
 
         verify_lock = inst.wait_until_finished(
             queue_id=new_queue.json().get("id"),
