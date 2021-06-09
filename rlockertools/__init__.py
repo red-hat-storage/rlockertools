@@ -1,7 +1,5 @@
-
-
 __all__ = [
-    'resourcelocker',
-    'exceptions',
-    'utils',
+    "resourcelocker",
+    "exceptions",
+    "utils",
 ]

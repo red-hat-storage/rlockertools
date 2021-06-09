@@ -15,35 +15,35 @@ class ResourceLocker:
         self.check_connection()
 
         self.endpoints = {
-            'resources': f'{self.instance_url}/api/resources',
-            'retrieve_resource': f'{self.instance_url}/api/resource/retrieve_entrypoint/',
-            'resource': f'{self.instance_url}/api/resource/',
-            'rqueue': f'{self.instance_url}/api/rqueue/',
-            'rqueues': f'{self.instance_url}/api/rqueues',
+            "resources": f"{self.instance_url}/api/resources",
+            "retrieve_resource": f"{self.instance_url}/api/resource/retrieve_entrypoint/",
+            "resource": f"{self.instance_url}/api/resource/",
+            "rqueue": f"{self.instance_url}/api/rqueue/",
+            "rqueues": f"{self.instance_url}/api/rqueues",
         }
 
         self.headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Token {self.token}'
+            "Content-Type": "application/json",
+            "Authorization": f"Token {self.token}",
         }
 
     def check_connection(self):
-        '''
+        """
         Checks Connection to the provided URL after initialization
 
         :return: None
         :raises: Connection Error
-        '''
+        """
         req = requests.get(self.instance_url)
         if req.status_code == 200:
-            print({'CONNECTION': 'OK'})
+            print({"CONNECTION": "OK"})
             return
         else:
             # Raise Connection Error if no 200
             raise ConnectionError
 
     def find_resource(self, search_string, signoff, priority, link=None, timeout=None):
-        '''
+        """
 
         :param search_string:
         :param signoff:
@@ -51,52 +51,54 @@ class ResourceLocker:
         :param link:
         :param timeout:
         :return:
-        '''
-        final_endpoint = self.endpoints['retrieve_resource'] + search_string
+        """
+        final_endpoint = self.endpoints["retrieve_resource"] + search_string
         data = {
             "priority": priority,
             "signoff": signoff,
         }
         if link:
-            data['link'] = link
+            data["link"] = link
 
         data_json = json.dumps(data)
 
         try:
-            req = requests.put(final_endpoint, headers=self.headers, data=data_json, timeout=timeout)
+            req = requests.put(
+                final_endpoint, headers=self.headers, data=data_json, timeout=timeout
+            )
             return req
 
         except ReadTimeout:
             raise TimeoutReachedForLockingResource
 
     def __lock(self, resource, signoff):
-        '''
+        """
         Method that will lock the requested resource
         :param resource: Resource to lock
         :param signoff: A message to write when the requested resource
             is about to lock
         :return: Response after the PUT request
-        '''
+        """
         lockable_resource = dict(resource)
-        lockable_resource['is_locked'] = True
-        lockable_resource['signoff'] = signoff
+        lockable_resource["is_locked"] = True
+        lockable_resource["signoff"] = signoff
 
-        final_endpoint = self.endpoints['resource'] + lockable_resource['name']
+        final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
         return req
 
     def release(self, resource):
-        '''
+        """
         Method that will release the requested resource
         :param resource: Resource to release
         :return: Response after the PUT request
-        '''
+        """
         lockable_resource = dict(resource)
-        lockable_resource['is_locked'] = False
+        lockable_resource["is_locked"] = False
 
-        final_endpoint = self.endpoints['resource'] + lockable_resource['name']
+        final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
@@ -108,43 +110,43 @@ class ResourceLocker:
             prettify_output(req.text)
 
     def all(self):
-        '''
+        """
         Display all the resources
         :return: Response in Dictionary
-        '''
-        req = requests.get(self.endpoints['resources'], headers=self.headers)
+        """
+        req = requests.get(self.endpoints["resources"], headers=self.headers)
         if req.status_code == 200:
             # json.loads returns it to a dictionary:
-            req_dict = json.loads(req.text.encode('utf8'))
+            req_dict = json.loads(req.text.encode("utf8"))
             return req_dict
         else:
             prettify_output(req.text)
             raise BadRequestError
 
     def filter_lockable_resource(self, lambda_expression):
-        '''
+        """
 
         :param lambda_expression:
             Example:
                 lambda x: getattr(x, 'is_locked') == False
         :return:
-        '''
+        """
         return filter(lambda_expression, self.all())
 
     def abort_queue(self, queue_id, abort_msg=None):
-        '''
+        """
         A method to send a POST request to abort the queue that was created, and expected
             to have an associated lockable resource
         We do this from the client side for now.
         :return: req
-        '''
-        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        """
+        final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             data_json = json.dumps(
                 {
-                    'status': 'ABORTED',
-                    'description': abort_msg,
+                    "status": "ABORTED",
+                    "description": abort_msg,
                 }
             )
 
@@ -157,19 +159,19 @@ class ResourceLocker:
         return req
 
     def change_queue(self, queue_id, status, description=None):
-        '''
+        """
         A method to send a POST request to change the status of the queue.
         :return: req
-        '''
-        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        """
+        final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
 
             data = {
-                "status" : status,
+                "status": status,
             }
             if description:
-                data['description'] = description
+                data["description"] = description
 
             data_json = json.dumps(data)
 
@@ -182,20 +184,24 @@ class ResourceLocker:
         return req
 
     def get_queues(self, status=None):
-        final_endpoint = self.endpoints['rqueues'] + f'?status={status}' if status else self.endpoints['rqueues']
+        final_endpoint = (
+            self.endpoints["rqueues"] + f"?status={status}"
+            if status
+            else self.endpoints["rqueues"]
+        )
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             # json.loads returns it to a dictionary
-            req_dict = json.loads(req.text.encode('utf8'))
+            req_dict = json.loads(req.text.encode("utf8"))
             return req_dict
 
     def get_queue(self, queue_id):
-        '''
+        """
         Return queue JSONIFIED by the given queue_id
         :param queue_id:
         :return:
-        '''
-        final_endpoint = self.endpoints['rqueue'] + str(queue_id)
+        """
+        final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             return req.json()
@@ -203,10 +209,14 @@ class ResourceLocker:
         return None
 
     def wait_until_finished(
-            self, queue_id, interval=15,
-            attempts=120, silent=False, abort_on_timeout=True,
+        self,
+        queue_id,
+        interval=15,
+        attempts=120,
+        silent=False,
+        abort_on_timeout=True,
     ):
-        '''
+        """
         A method that uses multiple retries until a status of queue is achieved
             Approach: return the queue obj as JSON if status is achieved.
             In any other case if failure/aborted or timeout,
@@ -220,114 +230,111 @@ class ResourceLocker:
         :param abort_on_timeout: Aborts the queue if timeout is reached
 
         :return queue as JSON response:
-        '''
-        try:
-            expected_status = 'FINISHED'
-            total_timeout_description = f"{attempts * interval}"
-            print(
-                f"Waiting until status {expected_status}, timeout is set to {total_timeout_description} seconds! \n"
-                "If the queue is in INITIALIZING state for a while, "
-                "be sure to check if your queue service is running! \n"
-            )
-            for attempt in range(attempts):
-                queue_to_check = self.get_queue(queue_id)
-                if not queue_to_check:
-                    raise Exception(
-                        f'Queue {queue_id} does not exist on the server! \n'
-                        'Error is not recoverable, raising Exception \n'
-                        'Please check the logs of the Django application! \n'
-                        'Possible solutions: \n'
-                        ' - Please double check your search_string, that it matches to an existing label or name'
-                    )
+        """
+        expected_status = "FINISHED"
+        total_timeout_description = f"{attempts * interval}"
+        print(
+            f"Waiting until status {expected_status}, timeout is set to {total_timeout_description} seconds! \n"
+            "If the queue is in INITIALIZING state for a while, "
+            "be sure to check if your queue service is running! \n"
+        )
+        for attempt in range(attempts):
+            queue_to_check = self.get_queue(queue_id)
+            if not queue_to_check:
+                raise Exception(
+                    f"Queue {queue_id} does not exist on the server! \n"
+                    "Error is not recoverable, raising Exception \n"
+                    "Please check the logs of the Django application! \n"
+                    "Possible solutions: \n"
+                    " - Please double check your search_string, that it matches to an existing label or name"
+                )
 
-                queue_status = queue_to_check.get('status')
-                if queue_status == expected_status:
-                    return queue_to_check
+            queue_status = queue_to_check.get("status")
+            if queue_status == expected_status:
+                return queue_to_check
 
-                else:
-                    # This needs to log, to automatically stream the output even though the process
-                    # is running on CI/CD platforms like Jenkins.
-                    # Therefore, please run the entire script that uses this function with python -u
-                    if queue_status in ['INITIALIZING', 'PENDING']:
-                        print(
-                            f"Queue {queue_id} is {queue_status} \n"
-                            f"More info about the queue: \n"
-                            f"{self.instance_url}\pendingrequests"
-                        )
-                    elif queue_status in ['ABORTED', 'FAILED']:
-                        err_msg = "Queue did NOT finish successfully \n" \
-                                  f"Error is: \n {queue_to_check}"
-                        if silent:
-                            print(
-                                err_msg,
-                                "Timeout reached, "
-                                "silent=true provided so no exception is raised"
-                            )
-                            return None
-                        else:
-                            raise Exception(err_msg)
-
-                    time.sleep(interval)
             else:
-                if abort_on_timeout:
-                    self.abort_queue(
-                        queue_id=queue_id,
-                        abort_msg="Timeout Reached for this queue. \n"
-                                  f"Attempts: {attempts} \n"
-                                  f"Interval: {interval} seconds \n"
-                                  f"Time Waited: {attempts * interval} seconds"
+                # This needs to log, to automatically stream the output even though the process
+                # is running on CI/CD platforms like Jenkins.
+                # Therefore, please run the entire script that uses this function with python -u
+                if queue_status in ["INITIALIZING", "PENDING"]:
+                    print(
+                        f"Queue {queue_id} is {queue_status} \n"
+                        f"More info about the queue: \n"
+                        f"{self.instance_url}\pendingrequests"
                     )
-                if silent:
-                    print("Timeout reached, silent=true provided so no exception is raised")
-                    return None
-                else:
-                    raise Exception(
-                        "Timeout Reached! \n"
-                        f"Status of the queue is not {expected_status}!"
+                elif queue_status in ["ABORTED", "FAILED"]:
+                    err_msg = (
+                        "Queue did NOT finish successfully \n"
+                        f"Error is: \n {queue_to_check}"
                     )
-        except KeyboardInterrupt:
-            print(f'INTERRUPTED! \n'
-                  f'PLEASE HOLD ON FOR A FEW SECONDS FOR CLEAN ABORTION OF YOUR QUEUE! \n')
-            self.abort_queue(queue_id, abort_msg="Keyboard Interrupt")
+                    if silent:
+                        print(
+                            err_msg,
+                            "Timeout reached, "
+                            "silent=true provided so no exception is raised",
+                        )
+                        return None
+                    else:
+                        raise Exception(err_msg)
 
+                time.sleep(interval)
+        else:
+            if abort_on_timeout:
+                self.abort_queue(
+                    queue_id=queue_id,
+                    abort_msg="Timeout Reached for this queue. \n"
+                    f"Attempts: {attempts} \n"
+                    f"Interval: {interval} seconds \n"
+                    f"Time Waited: {attempts * interval} seconds",
+                )
+            if silent:
+                print("Timeout reached, silent=true provided so no exception is raised")
+                return None
+            else:
+                raise Exception(
+                    "Timeout Reached! \n"
+                    f"Status of the queue is not {expected_status}!"
+                )
 
     def get_lockable_resources(
-            self, free_only=True,
-            label_matches=None, name=None, signoff=None
+        self, free_only=True, label_matches=None, name=None, signoff=None
     ):
         if not signoff:
             # Lets first design the final endpoint:
-            final_endpoint = self.endpoints['resources'] + f'?free_only={str(free_only).lower()}&'
+            final_endpoint = (
+                self.endpoints["resources"] + f"?free_only={str(free_only).lower()}&"
+            )
             if label_matches:
                 final_endpoint = f"{final_endpoint}label_matches={label_matches}"
             if name:
                 final_endpoint = f"{final_endpoint}name={name}"
         else:
-            final_endpoint = self.endpoints['resources'] + f'?signoff={signoff}'
+            final_endpoint = self.endpoints["resources"] + f"?signoff={signoff}"
 
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             # json.loads returns it to a dictionary
-            req_dict = json.loads(req.text.encode('utf8'))
+            req_dict = json.loads(req.text.encode("utf8"))
             return req_dict
 
         return req
 
     def lock_resource(self, resource, signoff, link=None):
-        '''
+        """
         Method that will lock the requested resource
         :param resource: Resource to lock
         :param signoff: A message to write when the requested resource
             is about to lock
         :return: Response after the PUT request
-        '''
+        """
         lockable_resource = dict(resource)
-        lockable_resource['is_locked'] = True
-        lockable_resource['signoff'] = signoff
+        lockable_resource["is_locked"] = True
+        lockable_resource["signoff"] = signoff
         if link:
-            lockable_resource['link'] = link
+            lockable_resource["link"] = link
 
-        final_endpoint = self.endpoints['resource'] + lockable_resource['name']
+        final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)

@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from rlockertools.resourcelocker import ResourceLocker
 import sys
 
+
 def init_argparser():
     """
     Initialization  of argument parse library with it's arguments
@@ -58,14 +59,14 @@ def init_argparser():
     parser.add_argument(
         "--interval",
         help="Use this when lock=True, how many seconds to wait between each call"
-             " while checking for a free resource",
+        " while checking for a free resource",
         type=int,
         action="store",
     )
     parser.add_argument(
         "--attempts",
         help="Use this when lock=True, how many times to create an API call"
-             " that will check for a free resource ",
+        " that will check for a free resource ",
         type=int,
         action="store",
     )
@@ -86,9 +87,7 @@ def run(args):
     # Instantiate the connection vs Resource locker:
     inst = ResourceLocker(instance_url=args.server_url, token=args.token)
     if args.release:
-        resource_to_release = inst.get_lockable_resources(
-            signoff=args.signoff
-        )[0]
+        resource_to_release = inst.get_lockable_resources(signoff=args.signoff)[0]
         if resource_to_release:
             release_attempt = inst.release(resource_to_release)
             print(release_attempt.text)
@@ -106,9 +105,9 @@ def run(args):
 
         abort_action = inst.abort_queue
         abort_action_args = {
-            "queue_id"  : new_queue.json().get('id'),
-            "abort_msg" : "Queue has been aborted in the middle of a CI/CD Pipeline \n"
-                          "or during manual execution."
+            "queue_id": new_queue.json().get("id"),
+            "abort_msg": "Queue has been aborted in the middle of a CI/CD Pipeline \n"
+            "or during manual execution.",
         }
 
         def signal_handler(sig, frame):
@@ -120,20 +119,20 @@ def run(args):
         signal.signal(signal.SIGBREAK, signal_handler)
 
         verify_lock = inst.wait_until_finished(
-            queue_id=new_queue.json().get('id'),
+            queue_id=new_queue.json().get("id"),
             interval=args.interval,
             attempts=args.attempts,
             silent=False,
-            abort_on_timeout=True
+            abort_on_timeout=True,
         )
         # If it will return any object, it means the condition is achieved:
         if verify_lock:
-            print('Resource Locked Successfully! Info: \n')
+            print("Resource Locked Successfully! Info: \n")
             # We print json response, it is better to visualize it nicer:
             pp.pprint(verify_lock)
 
 
 def main():
-    os.environ['PYTHONUNBUFFERED'] = '1'
+    os.environ["PYTHONUNBUFFERED"] = "1"
     args = init_argparser()
     run(args)
