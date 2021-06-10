@@ -43,7 +43,7 @@ optional arguments:
 ### To add a queue for locking a resource
 
 ```bash
-rlock --lock --server-url=your.rlocker.instance.com --token=YOURTOKEN --signoff=YOURUNIQUESIGNOFF --priority=3 --interval=15 --attempts=15
+rlock --lock --server-url=your.rlocker.instance.com --token=YOURTOKEN --search-string=nameorlabel --signoff=YOURUNIQUESIGNOFF --priority=3 --interval=15 --attempts=15
 ```
 
 ### To release a locked resource (filtration by signoff only)
