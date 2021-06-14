@@ -2,6 +2,7 @@ from requests.exceptions import ConnectionError, ReadTimeout
 from rlockertools.exceptions import BadRequestError, TimeoutReachedForLockingResource
 from rlockertools.utils import prettify_output
 import requests
+import datetime
 import json
 import time
 import pprint as pp
@@ -261,7 +262,7 @@ class ResourceLocker:
                     print(
                         f"Queue {queue_id} is {queue_status} \n"
                         f"More info about the queue: \n"
-                        f"{self.instance_url}\pendingrequests"
+                        f"{self.instance_url}/rqueues/{queue_id}"
                     )
                 elif queue_status in ["ABORTED", "FAILED"]:
                     err_msg = (
@@ -278,6 +279,7 @@ class ResourceLocker:
                     else:
                         raise Exception(err_msg)
 
+                self.beat_queue(queue_id)
                 time.sleep(interval)
         else:
             if abort_on_timeout:
@@ -338,4 +340,31 @@ class ResourceLocker:
         newjson = json.dumps(lockable_resource)
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        return req
+
+    def beat_queue(self, queue_id):
+        '''
+        Method that will write the datetime.utcnow() to the field of
+            last_beat to the queue.
+        This is useful to determine if there is still alive client
+            that waits for the specific queue to being FINISHED
+        :param queue_id:
+        :return:
+        '''
+        final_endpoint = self.endpoints["rqueue"] + str(queue_id)
+        req = requests.get(final_endpoint, headers=self.headers)
+        if req.status_code == 200:
+
+            data = {
+                "last_beat": str(datetime.datetime.utcnow()),
+            }
+
+            data_json = json.dumps(data)
+
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            pp.pprint(req.json())
+            return req
+
+        print(f"Something went wrong changing {queue_id} \n")
+        pp.pprint(req.json())
         return req
