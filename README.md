@@ -19,8 +19,8 @@ python setup.py install
 rlock --help
 ```
 ```
-usage: rlock [-h] --server-url SERVER_URL --token TOKEN [--release] [--lock] [--signoff SIGNOFF] [--priority PRIORITY] [--search-string SEARCH_STRING] [--link LINK] [--interval INTERVAL]
-             [--attempts ATTEMPTS]
+usage: rlock [-h] --server-url SERVER_URL --token TOKEN [--release] [--lock] [--resume-on-connection-error] [--signoff SIGNOFF]
+             [--priority PRIORITY] [--search-string SEARCH_STRING] [--link LINK] [--interval INTERVAL] [--attempts ATTEMPTS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -29,6 +29,9 @@ optional arguments:
   --token TOKEN         Token of the user that creates API calls
   --release             Use this argument to release a resource
   --lock                Use this argument to lock a resource
+  --resume-on-connection-error
+                        Use this argument in case you don't want to break queue execution in the middle of waiting for queue status
+                        being FINISHED
   --signoff SIGNOFF     Use this when lock=True, locking a resource requires signoff
   --priority PRIORITY   Use this when lock=True, specify the level of priority the resource should be locked
   --search-string SEARCH_STRING

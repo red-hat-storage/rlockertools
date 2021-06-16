@@ -216,6 +216,7 @@ class ResourceLocker:
         attempts=120,
         silent=False,
         abort_on_timeout=True,
+        resume_on_connection_error=False,
     ):
         """
         A method that uses multiple retries until a status of queue is achieved
@@ -229,58 +230,91 @@ class ResourceLocker:
         :param silent: If timeout is reached (attempts * interval), then
             it will silently return None rather than raising Exception.
         :param abort_on_timeout: Aborts the queue if timeout is reached
+        :param resume_on_connection_error: Do not interrupt the waiting, if in the middle of it
+            we will have connection errors (server is down).
 
         :return queue as JSON response:
         """
         expected_status = "FINISHED"
-        total_timeout_description = f"{attempts * interval}"
+        total_timeout_description = f"{attempts * interval} seconds"
         print(
-            f"Waiting until status {expected_status}, timeout is set to {total_timeout_description} seconds! \n"
+            f"Waiting until status {expected_status}, timeout is set to {total_timeout_description}! \n"
             "If the queue is in INITIALIZING state for a while, "
             "be sure to check if your queue service is running! \n"
         )
         for attempt in range(attempts):
-            queue_to_check = self.get_queue(queue_id)
-            if not queue_to_check:
-                raise Exception(
-                    f"Queue {queue_id} does not exist on the server! \n"
-                    "Error is not recoverable, raising Exception \n"
-                    "Please check the logs of the Django application! \n"
-                    "Possible solutions: \n"
-                    " - Please double check your search_string, that it matches to an existing label or name"
-                )
-
-            queue_status = queue_to_check.get("status")
-            if queue_status == expected_status:
-                return queue_to_check
-
-            else:
-                # This needs to log, to automatically stream the output even though the process
-                # is running on CI/CD platforms like Jenkins.
-                # Therefore, please run the entire script that uses this function with python -u
-                if queue_status in ["INITIALIZING", "PENDING"]:
-                    print(
-                        f"Queue {queue_id} is {queue_status} \n"
-                        f"More info about the queue: \n"
-                        f"{self.instance_url}/rqueues/{queue_id}"
+            try:
+                queue_to_check = self.get_queue(queue_id)
+                if not queue_to_check:
+                    raise Exception(
+                        f"Queue {queue_id} does not exist on the server! \n"
+                        "Error is not recoverable, raising Exception \n"
+                        "Please check the logs of the Django application! \n"
+                        "Possible solutions: \n"
+                        " - Please double check your search_string, that it matches to an existing label or name"
                     )
-                elif queue_status in ["ABORTED", "FAILED"]:
-                    err_msg = (
-                        "Queue did NOT finish successfully \n"
-                        f"Error is: \n {queue_to_check}"
-                    )
-                    if silent:
+                # Once we passed through the check if queue exists, we should check continuously it's status:
+                queue_status = queue_to_check.get("status")
+                if queue_status == expected_status:
+                    return queue_to_check
+
+                else:
+                    if queue_status in ["INITIALIZING", "PENDING"]:
                         print(
-                            err_msg,
-                            "Timeout reached, "
-                            "silent=true provided so no exception is raised",
+                            f"Queue {queue_id} is {queue_status} \n"
+                            f"More info about the queue: \n"
+                            f"{self.instance_url}/rqueues/{queue_id}"
                         )
-                        return None
-                    else:
-                        raise Exception(err_msg)
+                    elif queue_status in ["ABORTED", "FAILED"]:
+                        err_msg = (
+                            "Queue did NOT finish successfully \n"
+                            f"Error is: \n {queue_to_check}"
+                        )
+                        if silent:
+                            print(
+                                err_msg,
+                                "Timeout reached, "
+                                "silent=true provided so no exception is raised",
+                            )
+                            return None
+                        else:
+                            raise Exception(err_msg)
 
-                self.beat_queue(queue_id)
-                time.sleep(interval)
+                    self.beat_queue(queue_id)
+                    time.sleep(interval)
+            except ConnectionError as e:
+                print(
+                    "Connection Error to the specified URL! \n"
+                    "Error is: \n"
+                    f"{str(e)}"
+                )
+                # If there was a connection error while waiting for the achieved status,
+                # the user might want to wait until the server is back up.
+                if resume_on_connection_error:
+                    # User decided to resume on connection error!
+                    # We want to continuously show this message, in order to avoid iteration, and waste the attempts
+                    # on connection errors.
+                    while True:
+                        print(
+                            f"Will try again in {interval} seconds \n"
+                            "NOTE: Timeout duration is paused! \n"
+                            "You decided to wait if connection errors will occur, your queue "
+                            f"will still have a timeout of {(attempts - attempt) * interval} seconds, once the resource locker server is back!"
+                        )
+                        time.sleep(interval)
+                        try:
+                            self.check_connection()
+                            # If method did not raise, get out, server is up
+                            break
+                        except:
+                            pass
+                else:
+                    raise
+            except Exception as e:
+                print("An unknown exception occured: \n"
+                      f"{str(e)}")
+                raise
+
         else:
             if abort_on_timeout:
                 self.abort_queue(
