@@ -196,12 +196,17 @@ class ResourceLocker:
             req_dict = json.loads(req.text.encode("utf8"))
             return req_dict
 
-    def get_queue(self, queue_id):
+    def get_queue(self, queue_id, verify_connection=False):
         """
         Return queue JSONIFIED by the given queue_id
         :param queue_id:
+        :param verify_connection: Check the connection to the server before
+            retrieving the JSON for the specific queue, False by default
         :return:
         """
+        if verify_connection:
+            self.check_connection()
+
         final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
@@ -244,7 +249,10 @@ class ResourceLocker:
         )
         for attempt in range(attempts):
             try:
-                queue_to_check = self.get_queue(queue_id)
+                queue_to_check = self.get_queue(
+                    queue_id,
+                    verify_connection=True
+                )
                 if not queue_to_check:
                     raise Exception(
                         f"Queue {queue_id} does not exist on the server! \n"
