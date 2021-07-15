@@ -93,10 +93,12 @@ def run(args):
         # Instantiate the connection vs Resource locker:
         inst = ResourceLocker(instance_url=args.server_url, token=args.token)
         if args.release:
-            resource_to_release = inst.get_lockable_resources(signoff=args.signoff)[0]
+            resource_to_release = inst.get_lockable_resources(signoff=args.signoff)
             if resource_to_release:
-                release_attempt = inst.release(resource_to_release)
+                release_attempt = inst.release(resource_to_release[0])
                 print(release_attempt.text)
+            else:
+                print(f"There is no resource: {args.signoff} locked, ignorring!")
 
         if args.lock:
             new_queue = inst.find_resource(
