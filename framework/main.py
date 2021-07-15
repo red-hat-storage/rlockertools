@@ -98,7 +98,7 @@ def run(args):
                 release_attempt = inst.release(resource_to_release[0])
                 print(release_attempt.text)
             else:
-                print(f"There is no resource: {args.signoff} locked, ignorring!")
+                print(f"There is no resource: {args.signoff} locked, ignoring!")
 
         if args.lock:
             new_queue = inst.find_resource(

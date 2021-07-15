@@ -8,7 +8,7 @@ with open("HISTORY.md") as history_file:
 
 setup_args = dict(
     name="rlockertools",
-    version="0.3.8",
+    version="0.3.9",
     description="Useful tools to interact with Resource Locker Project",
     long_description_content_type="text/markdown",
     long_description=README + "\n\n" + HISTORY,
@@ -17,7 +17,7 @@ setup_args = dict(
     author="Jim Erginbash",
     author_email="jimshapedcoding@gmail.com",
     keywords=["Rlocker", "rlocker", "ResourceLocker", "Python 3", "Resource Locker"],
-    url="https://github.com/jimdevops19/rlockertools.git",
+    url="https://github.com/red-hat-storage/rlockertools.git",
     download_url="https://pypi.org/project/rlockertools/",
 )
 

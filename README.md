@@ -2,7 +2,7 @@ Useful tools to work with [Rlocker project API](https://github.com/jimdevops19/r
 
 
 # Quick Start
- 
+
 ## Normal installation
 
 ```bash
@@ -10,15 +10,16 @@ pip install rlockertools
 ```
 
 ## Setup
+
 ```bash
-git clone https://github.com/jimdevops19/rlockertools.git
+git clone https://github.com/red-hat-storage/rlockertools.git
 cd rlockertools
 python -m venv venv
 source venv/bin/activate
-python setup.py install 
+pip install ./
 rlock --help
 ```
-```
+
 usage: rlock [-h] --server-url SERVER_URL --token TOKEN [--release] [--lock] [--resume-on-connection-error] [--signoff SIGNOFF]
              [--priority PRIORITY] [--search-string SEARCH_STRING] [--link LINK] [--interval INTERVAL] [--attempts ATTEMPTS]
 
