@@ -8,7 +8,7 @@ with open("HISTORY.md") as history_file:
 
 setup_args = dict(
     name="rlockertools",
-    version="0.3.8",
+    version="0.3.9",
     description="Useful tools to interact with Resource Locker Project",
     long_description_content_type="text/markdown",
     long_description=README + "\n\n" + HISTORY,
