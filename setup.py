@@ -17,7 +17,7 @@ setup_args = dict(
     author="Jim Erginbash",
     author_email="jimshapedcoding@gmail.com",
     keywords=["Rlocker", "rlocker", "ResourceLocker", "Python 3", "Resource Locker"],
-    url="https://github.com/jimdevops19/rlockertools.git",
+    url="https://github.com/red-hat-storage/rlockertools.git",
     download_url="https://pypi.org/project/rlockertools/",
 )
 
