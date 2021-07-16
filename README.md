@@ -1,4 +1,4 @@
-Useful tools to work with [Rlocker project API](https://github.com/jimdevops19/rlocker.git)
+Useful tools to work with [Rlocker project API](https://github.com/red-hat-storage/rlocker.git)
 
 
 # Quick Start
