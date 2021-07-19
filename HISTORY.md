@@ -11,3 +11,8 @@ Move to new repo + bug fix
 ## [0.3.10] - 2021-07-15
 
 Fix build issue
+
+## [0.3.11] - 2021-07-19
+
+Suppress the logs
+Show safe errors when beating a queue returns !=200 status code

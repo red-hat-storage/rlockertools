@@ -409,6 +409,6 @@ class ResourceLocker:
                 pp.pprint(req.json())
             return req
 
-        print(f"Something went wrong changing {queue_id} \n")
-        pp.pprint(req.json())
+        print(f"Something went wrong beating {queue_id} \n")
+        pp.pprint(req.text)
         return req
