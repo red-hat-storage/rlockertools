@@ -288,7 +288,7 @@ class ResourceLocker:
                         else:
                             raise Exception(err_msg)
 
-                    self.beat_queue(queue_id)
+                    self.beat_queue(queue_id, suppress_logs=True)
                     time.sleep(interval)
             except ConnectionError as e:
                 print(
@@ -384,13 +384,14 @@ class ResourceLocker:
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
         return req
 
-    def beat_queue(self, queue_id):
+    def beat_queue(self, queue_id, suppress_logs=False):
         '''
         Method that will write the datetime.utcnow() to the field of
             last_beat to the queue.
         This is useful to determine if there is still alive client
             that waits for the specific queue to being FINISHED
         :param queue_id:
+        :param suppress_logs False by default, sometimes we'd like to quiet the logs
         :return:
         '''
         final_endpoint = self.endpoints["rqueue"] + str(queue_id)
@@ -404,7 +405,8 @@ class ResourceLocker:
             data_json = json.dumps(data)
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
-            pp.pprint(req.json())
+            if not suppress_logs:
+                pp.pprint(req.json())
             return req
 
         print(f"Something went wrong changing {queue_id} \n")
