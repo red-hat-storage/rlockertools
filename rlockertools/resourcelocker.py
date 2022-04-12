@@ -159,23 +159,34 @@ class ResourceLocker:
         pp.pprint(req.json())
         return req
 
-    def change_queue(self, queue_id, status, description=None):
+    def change_queue(self, queue_id, status, description=None, **datakwargs):
         """
         A method to send a POST request to change the status of the queue.
+        A queue has data dictionary and some more fields that we support to modify
+            Each k&v pair that is liked to be added to queue, will be added via **datakwargs
         :return: req
         """
         final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
+            # Check for data dictionary args to override if needed:
+            data_section = req.json().get('data')
+            if datakwargs:
+                for k, v in datakwargs.items():
+                    data_section[k] = v
 
-            data = {
-                "status": status,
-            }
+            print(f"DATA SECTION: {data_section}")
+            # Modify status
+            to_modify = {"status": status}
+
+            # Modify description if provided
             if description:
-                data["description"] = description
+                to_modify["description"] = description
 
-            data_json = json.dumps(data)
+            # Modify data section
+            to_modify["data"] = data_section
 
+            data_json = json.dumps(to_modify)
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
             pp.pprint(req.json())
             return req
