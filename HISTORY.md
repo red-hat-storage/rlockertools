@@ -16,3 +16,8 @@ Fix build issue
 
 Suppress the logs
 Show safe errors when beating a queue returns !=200 status code
+
+## [0.4] - 2022-04-12
+
+Allow **datakwargs in the change queue method.
+This is necessary to allow modification of the data section once a queue is changing
