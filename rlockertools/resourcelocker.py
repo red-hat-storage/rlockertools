@@ -217,13 +217,17 @@ class ResourceLocker:
         """
         if verify_connection:
             self.check_connection()
-
         final_endpoint = self.endpoints["rqueue"] + str(queue_id)
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             return req.json()
-
-        return None
+        else:
+            print(
+                f"The request for the queue returned code: {req.status_code} \n"
+                "Response was: \n"
+                f"{req.text}"
+            )
+            return None
 
     def wait_until_finished(
         self,
@@ -266,11 +270,10 @@ class ResourceLocker:
                 )
                 if not queue_to_check:
                     raise Exception(
-                        f"Queue {queue_id} does not exist on the server! \n"
+                        f"Queue {queue_id} seems to not exist on the server! \n"
                         "Error is not recoverable, raising Exception \n"
-                        "Please check the logs of the Django application! \n"
-                        "Possible solutions: \n"
-                        " - Please double check your search_string, that it matches to an existing label or name"
+                        "Please check the output of the method. \n"
+                        "Or check the logs of the Resource Locker Server! \n"
                     )
                 # Once we passed through the check if queue exists, we should check continuously it's status:
                 queue_status = queue_to_check.get("status")
