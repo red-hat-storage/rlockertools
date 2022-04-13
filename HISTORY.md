@@ -21,3 +21,7 @@ Show safe errors when beating a queue returns !=200 status code
 
 Allow **datakwargs in the change queue method.
 This is necessary to allow modification of the data section once a queue is changing
+
+## [0.4.1] - 2022-04-13
+
+Show more output in get_queue method in case of non 200 status code
