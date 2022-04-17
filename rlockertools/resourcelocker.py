@@ -170,7 +170,7 @@ class ResourceLocker:
         req = requests.get(final_endpoint, headers=self.headers)
         if req.status_code == 200:
             # Check for data dictionary args to override if needed:
-            data_section = req.json().get('data')
+            data_section = json.loads(req.json().get('data'))
             if datakwargs:
                 for k, v in datakwargs.items():
                     data_section[k] = v

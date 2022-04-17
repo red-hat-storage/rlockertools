@@ -25,3 +25,7 @@ This is necessary to allow modification of the data section once a queue is chan
 ## [0.4.1] - 2022-04-13
 
 Show more output in get_queue method in case of non 200 status code
+
+## [0.4.2] - 2022-04-17
+
+Address item assignment for str, should be fixed to a dictionary in change queue method
