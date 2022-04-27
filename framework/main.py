@@ -107,6 +107,9 @@ def run(args):
                 priority=int(args.priority),
                 link=quote(args.link, safe="") if args.link else None,
             )
+            # Save the queue id in a file
+            with open("queue_id.log", "w") as f:
+                f.write(f"{new_queue.json().get('id')}")
             # We should verify that the resource has been locked by checking
             # if the queue is finished.
             # timeout is -> attempts * interval

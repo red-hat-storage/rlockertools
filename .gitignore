@@ -1,5 +1,6 @@
 /.idea/
 *.pyc
+*.log
 __pycache__
 .ipynb_checkpoints
 .pytest_cache
@@ -9,3 +10,4 @@ __pycache__
 /venv/
 secretnotes.txt
 simulate.py
+

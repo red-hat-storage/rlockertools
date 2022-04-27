@@ -29,3 +29,8 @@ Show more output in get_queue method in case of non 200 status code
 ## [0.4.2] - 2022-04-17
 
 Address item assignment for str, should be fixed to a dictionary in change queue method
+
+## [0.4.3] - 2022-04-28
+
+Adding log file in order to track after the queue id number once executing from the rlock entrypoint.
+Reason: In order to to API calls about the queue, we need to save it in some readable location
