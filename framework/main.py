@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 import pprint as pp
@@ -39,6 +40,9 @@ def init_argparser():
         "--lock", help="Use this argument to lock a resource", action="store_true"
     )
     parser.add_argument(
+        "--check", help="Use this to check if a resource is available", action="store_true"
+    )
+    parser.add_argument(
         "--resume-on-connection-error", help="Use this argument in case you don't want to break queue execution"
                                              " in the middle of waiting for queue status being FINISHED", action="store_true"
     )
@@ -54,7 +58,7 @@ def init_argparser():
     )
     parser.add_argument(
         "--search-string",
-        help="Use this when lock=True, specify the lable or the name of the lockable resource",
+        help="Use this when lock=True or check=True, specify the label or the name of the lockable resource",
         action="store",
     )
     parser.add_argument(
@@ -141,6 +145,17 @@ def run(args):
                 print("Resource Locked Successfully! Info: \n")
                 # We print json response, it is better to visualize it nicer:
                 pp.pprint(verify_lock)
+
+        if args.check:
+            resources_by_name = inst.get_lockable_resources(name=args.search_string)
+            resources_by_label = inst.get_lockable_resources(label_matches=args.search_string)
+            if (resources_by_name or resources_by_label):
+                print("Resources are available:")
+                print(f"by name: {json.dumps(resources_by_name)}")
+                print(f"by label: {json.dumps(resources_by_label)}")
+            else:
+                print(f"No resource available.")
+                sys.exit(3)
 
     except (ConnectionError) as e:
         print(
