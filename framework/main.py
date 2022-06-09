@@ -1,3 +1,4 @@
+import json
 import os
 import signal
 import pprint as pp
@@ -150,8 +151,8 @@ def run(args):
             resources_by_label = inst.get_lockable_resources(label_matches=args.search_string)
             if (resources_by_name or resources_by_label):
                 print("Resources are available:")
-                print(f"by name: {resources_by_name}")
-                print(f"by label: {resources_by_label}")
+                print(f"by name: {json.dumps(resources_by_name)}")
+                print(f"by label: {json.dumps(resources_by_label)}")
             else:
                 print(f"No resource available.")
                 sys.exit(3)
