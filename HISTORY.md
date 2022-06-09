@@ -34,3 +34,11 @@ Address item assignment for str, should be fixed to a dictionary in change queue
 
 Adding log file in order to track after the queue id number once executing from the rlock entrypoint.
 Reason: In order to to API calls about the queue, we need to save it in some readable location
+
+## [0.4.4] - 2022-06-09
+
+Adding support for `--check` argument which will return if the given `--search-string` has available resources
+by label or a name. Commit number: #15
+
+Usage example:
+`rlock --check --search-string=aws-east-2 --token=$token --server-url=$SERVER_URL`
