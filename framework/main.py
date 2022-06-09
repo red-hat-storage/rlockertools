@@ -39,7 +39,7 @@ def init_argparser():
         "--lock", help="Use this argument to lock a resource", action="store_true"
     )
     parser.add_argument(
-        "--check", help="Use this to check a resource is available", action="store_true"
+        "--check", help="Use this to check if a resource is available", action="store_true"
     )
     parser.add_argument(
         "--resume-on-connection-error", help="Use this argument in case you don't want to break queue execution"
