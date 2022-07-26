@@ -42,3 +42,7 @@ by label or a name. Commit number: #15
 
 Usage example:
 `rlock --check --search-string=aws-east-2 --token=$token --server-url=$SERVER_URL`
+
+## [0.4.5] - 2022-07-26
+
+Fixing JSON parsing for the data section in a queue, which was not fixed totally in 0.4.2
