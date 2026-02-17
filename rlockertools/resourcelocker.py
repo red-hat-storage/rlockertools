@@ -28,7 +28,7 @@ class ResourceLocker:
             "Authorization": f"Token {self.token}",
         }
 
-    def check_connection(self):
+    def check_connection(self, silent=True):
         """
         Checks Connection to the provided URL after initialization
 
@@ -37,7 +37,8 @@ class ResourceLocker:
         """
         req = requests.get(self.instance_url)
         if req.status_code == 200:
-            print({"CONNECTION": "OK"})
+            if not silent:
+                print({"CONNECTION": "OK"})
             return
         else:
             # Raise Connection Error if no 200
@@ -281,12 +282,17 @@ class ResourceLocker:
                     return queue_to_check
 
                 else:
-                    if queue_status in ["INITIALIZING", "PENDING"]:
+                    if queue_status in ["INITIALIZING"] or (queue_status == "PENDING" and not (attempt % 1000)):
                         print(
                             f"Queue {queue_id} is {queue_status} \n"
                             f"More info about the queue: \n"
                             f"{self.instance_url}/rqueues/{queue_id}"
                         )
+                    elif queue_status in ["PENDING"]:
+                        if (attempt % 50):
+                            print(".", end='', flush=True)
+                        else:
+                            print(".")
                     elif queue_status in ["ABORTED", "FAILED"]:
                         err_msg = (
                             "Queue did NOT finish successfully \n"
