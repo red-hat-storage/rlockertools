@@ -46,3 +46,7 @@ Usage example:
 ## [0.4.5] - 2022-07-26
 
 Fixing JSON parsing for the data section in a queue, which was not fixed totally in 0.4.2
+
+## [0.4.6] - 2026-02-18
+
+Limit the output from rlock when waiting for resource
