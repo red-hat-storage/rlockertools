@@ -69,7 +69,7 @@ def init_argparser():
     parser.add_argument(
         "--interval",
         help="Use this when lock=True, how many seconds to wait between each call"
-        " while checking for a free resource",
+        " while checking for a free resource (this is the maximum time)",
         type=int,
         action="store",
     )

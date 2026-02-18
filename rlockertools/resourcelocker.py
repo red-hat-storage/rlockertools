@@ -246,7 +246,7 @@ class ResourceLocker:
                 we raise Exception if silent=False.
             Or printing the message silently if silent=True.
         :param queue_id:
-        :param interval: Time to wait in seconds between the attempts
+        :param interval: Time to wait in seconds between the attempts (this is the maximum time)
         :param attempts: Number of the attempts to try
         :param silent: If timeout is reached (attempts * interval), then
             it will silently return None rather than raising Exception.
@@ -257,7 +257,7 @@ class ResourceLocker:
         :return queue as JSON response:
         """
         expected_status = "FINISHED"
-        total_timeout_description = f"{attempts * interval} seconds"
+        total_timeout_description = f"cca {attempts * interval} seconds"
         print(
             f"Waiting until status {expected_status}, timeout is set to {total_timeout_description}! \n"
             "If the queue is in INITIALIZING state for a while, "
@@ -309,7 +309,12 @@ class ResourceLocker:
                             raise Exception(err_msg)
 
                     self.beat_queue(queue_id, suppress_logs=True)
-                    time.sleep(interval)
+                    # in the first 2 minutes, check the status every 20 seconds, then continue with the configured
+                    # interval, which could be longer to lower the load on the service
+                    if attempt < 6:
+                        time.sleep(20)
+                    else:
+                        time.sleep(interval)
             except ConnectionError as e:
                 print(
                     "Connection Error to the specified URL! \n"
