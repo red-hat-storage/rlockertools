@@ -108,7 +108,28 @@ class ResourceLocker:
             print(f"Released {resource['name']} successfully!")
             return req
         else:
-            print(f"There were some errors from the Resource Locker server:")
+            print("There were some errors from the Resource Locker server:")
+            prettify_output(req.text)
+
+    def maintenance(self, resource, maintenance_mode=False):
+        """
+        Method that will release the requested resource
+        :param resource: Resource to release
+        :param maintenance_mode:
+        :return: Response after the PUT request
+        """
+        lockable_resource = dict(resource)
+        lockable_resource["in_maintenance"] = maintenance_mode
+
+        final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
+        newjson = json.dumps(lockable_resource)
+
+        req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        if req.status_code == 200:
+            print(f"Updated maintenance mode {resource['name']} successfully!")
+            return req
+        else:
+            print("There were some errors from the Resource Locker server:")
             prettify_output(req.text)
 
     def all(self):
