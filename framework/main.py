@@ -80,6 +80,24 @@ def init_argparser():
         type=int,
         action="store",
     )
+    parser.add_argument(
+        "--cpu_cluster",
+        help="Add the cpu the cluster needs.",
+        type=int,
+        action="store",
+    )
+    parser.add_argument(
+        "--memory_cluster",
+        help="Add the memory the cluster needs.",
+        type=int,
+        action="store",
+    )
+    parser.add_argument(
+        "--storage_cluster",
+        help="Add the storage the cluster needs.",
+        type=int,
+        action="store",
+    )
     return parser.parse_args()
 
 
