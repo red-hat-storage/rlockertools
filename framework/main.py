@@ -37,18 +37,36 @@ def init_argparser():
         "--release", help="Use this argument to release a resource", action="store_true"
     )
     parser.add_argument(
+        "--maintenance", "-m", help="Use this parameter to put resource to maintenance", action="store_true"
+    )
+    parser.add_argument(
+        "--no-maintenance",
+        "-M",
+        help="Use this parameter to remove maintenance mode from resource",
+        action="store_true"
+    )
+    parser.add_argument(
         "--lock", help="Use this argument to lock a resource", action="store_true"
     )
     parser.add_argument(
         "--check", help="Use this to check if a resource is available", action="store_true"
     )
     parser.add_argument(
-        "--resume-on-connection-error", help="Use this argument in case you don't want to break queue execution"
-                                             " in the middle of waiting for queue status being FINISHED", action="store_true"
+        "--resume-on-connection-error",
+        help=(
+            "Use this argument in case you don't want to break queue execution"
+            " in the middle of waiting for queue status being FINISHED"
+        ),
+        action="store_true"
     )
     parser.add_argument(
         "--signoff",
         help="Use this when lock=True, locking a resource requires signoff",
+        action="store",
+    )
+    parser.add_argument(
+        "--name",
+        help="Use this when operating with maintenance mode.",
         action="store",
     )
     parser.add_argument(
@@ -96,6 +114,23 @@ def run(args):
     try:
         # Instantiate the connection vs Resource locker:
         inst = ResourceLocker(instance_url=args.server_url, token=args.token)
+        if args.maintenance:
+            resource = inst.get_lockable_resources(name=args.name, free_only=False)
+            print(resource)
+            if resource:
+                maintenance_attempt = inst.maintenance(resource[0], True)
+                print(maintenance_attempt.text)
+            else:
+                print(f"There is no resource: {args.signoff} to be moved to maintenance!")
+
+        if args.no_maintenance:
+            resource = inst.get_lockable_resources(name=args.name, free_only=False)
+            if resource:
+                maintenance_attempt = inst.maintenance(resource[0], False)
+                print(maintenance_attempt.text)
+            else:
+                print(f"There is no resource: {args.signoff} to be moved from maintenance!")
+
         if args.release:
             resource_to_release = inst.get_lockable_resources(signoff=args.signoff)
             if resource_to_release:
@@ -154,7 +189,7 @@ def run(args):
                 print(f"by name: {json.dumps(resources_by_name)}")
                 print(f"by label: {json.dumps(resources_by_label)}")
             else:
-                print(f"No resource available.")
+                print("No resource available.")
                 sys.exit(3)
 
     except (ConnectionError) as e:
