@@ -54,3 +54,47 @@ rlock --lock --server-url=your.rlocker.instance.com --token=YOURTOKEN --search-s
 ```bash
 rlock --release --server-url=your.rlocker.instance.com --token=YOURTOKEN --signoff=YOURUNIQUESIGNOFF
 ```
+
+## Logging Configuration
+
+The rlockertools library uses Python's standard logging module. By default, logging is disabled (NullHandler). To enable logging output, configure it in your application:
+
+### Basic Configuration
+
+```python
+import logging
+
+# Configure logging at the start of your application
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+```
+
+### Advanced Configuration
+
+```python
+import logging
+
+# Create a logger for rlockertools
+logger = logging.getLogger('rlockertools')
+logger.setLevel(logging.DEBUG)
+
+# Create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+# Create formatter and add it to the handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(ch)
+```
+
+### Log Levels
+
+- `DEBUG`: Detailed information, typically for diagnosing problems (includes API responses)
+- `INFO`: General informational messages (connection status, resource operations)
+- `WARNING`: Warning messages (retries, timeouts)
+- `ERROR`: Error messages (failures, connection errors)

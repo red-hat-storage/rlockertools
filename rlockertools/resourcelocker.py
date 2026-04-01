@@ -5,7 +5,10 @@ import requests
 import datetime
 import json
 import time
-import pprint as pp
+import pprint
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ResourceLocker:
@@ -48,12 +51,18 @@ class ResourceLocker:
                 last_response = response
                 if attempt < self.max_retries - 1:
                     delay = self.retry_delay * (2 ** attempt)  # Exponential backoff
-                    print(f"Request to {url} returned status {response.status_code}, retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})")
+                    logger.warning(
+                        f"Request to {url} returned status {response.status_code}, "
+                        "retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})"
+                    )
                     time.sleep(delay)
-            except (ConnectionError, ReadTimeout) as e:
+            except (ConnectionError, ReadTimeout):
                 if attempt < self.max_retries - 1:
                     delay = self.retry_delay * (2 ** attempt)
-                    print(f"Connection error to {url}, retrying in {delay}s... (attempt {attempt + 1}/{self.max_retries})")
+                    logger.warning(
+                        f"Connection error to {url}, retrying in {delay}s... "
+                        "(attempt {attempt + 1}/{self.max_retries})"
+                    )
                     time.sleep(delay)
                 else:
                     raise
@@ -69,7 +78,7 @@ class ResourceLocker:
         req = self._get_with_retry(self.instance_url)
         if req.status_code == 200:
             if not silent:
-                print({"CONNECTION": "OK"})
+                logger.info({"CONNECTION": "OK"})
             return
         else:
             # Raise Connection Error if no 200
@@ -136,10 +145,10 @@ class ResourceLocker:
 
         req = requests.put(final_endpoint, headers=self.headers, data=newjson)
         if req.status_code == 200:
-            print(f"Released {resource['name']} successfully!")
+            logger.info(f"Released {resource['name']} successfully!")
             return req
         else:
-            print(f"There were some errors from the Resource Locker server:")
+            logger.error("There were some errors from the Resource Locker server:")
             prettify_output(req.text)
 
     def all(self):
@@ -184,11 +193,11 @@ class ResourceLocker:
             )
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
-            pp.pprint(req.json())
+            logger.debug(pprint.pformat(req.json()))
             return req
 
-        print(f"Something went wrong aborting the {queue_id} \n")
-        pp.pprint(req.json())
+        logger.error(f"Something went wrong aborting the {queue_id}")
+        logger.debug(pprint.pformat(req.json()))
         return req
 
     def change_queue(self, queue_id, status, description=None, **datakwargs):
@@ -207,7 +216,7 @@ class ResourceLocker:
                 for k, v in datakwargs.items():
                     data_section[k] = v
 
-            print(f"DATA SECTION: {data_section}")
+            logger.debug(f"DATA SECTION: {data_section}")
             # Modify status
             to_modify = {"status": status}
 
@@ -220,11 +229,11 @@ class ResourceLocker:
 
             data_json = json.dumps(to_modify)
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
-            pp.pprint(req.json())
+            logger.debug(pprint.pformat(req.json()))
             return req
 
-        print(f"Something went wrong changing {queue_id} \n")
-        pp.pprint(req.json())
+        logger.error(f"Something went wrong changing {queue_id} \n")
+        logger.debug(pprint.pformat(req.json()))
         return req
 
     def get_queues(self, status=None):
@@ -254,7 +263,7 @@ class ResourceLocker:
         if req.status_code == 200:
             return req.json()
         else:
-            print(
+            logger.error(
                 f"The request for the queue returned code: {req.status_code} \n"
                 "Response was: \n"
                 f"{req.text}"
@@ -289,7 +298,7 @@ class ResourceLocker:
         """
         expected_status = "FINISHED"
         total_timeout_description = f"cca {attempts * interval} seconds"
-        print(
+        logger.info(
             f"Waiting until status {expected_status}, timeout is set to {total_timeout_description}! \n"
             "If the queue is in INITIALIZING state for a while, "
             "be sure to check if your queue service is running! \n"
@@ -314,26 +323,26 @@ class ResourceLocker:
 
                 else:
                     if queue_status in ["INITIALIZING"] or (queue_status == "PENDING" and not (attempt % 1000)):
-                        print(
+                        logger.info(
                             f"Queue {queue_id} is {queue_status} \n"
                             f"More info about the queue: \n"
                             f"{self.instance_url}/rqueues/{queue_id}"
                         )
                     elif queue_status in ["PENDING"]:
                         if (attempt % 50):
-                            print(".", end='', flush=True)
+                            logger.debug(".")
                         else:
-                            print(".")
+                            logger.debug(".")
                     elif queue_status in ["ABORTED", "FAILED"]:
                         err_msg = (
                             "Queue did NOT finish successfully \n"
                             f"Error is: \n {queue_to_check}"
                         )
                         if silent:
-                            print(
-                                err_msg,
+                            logger.warning(
+                                err_msg +
                                 "Timeout reached, "
-                                "silent=true provided so no exception is raised",
+                                "silent=true provided so no exception is raised"
                             )
                             return None
                         else:
@@ -347,7 +356,7 @@ class ResourceLocker:
                     else:
                         time.sleep(interval)
             except ConnectionError as e:
-                print(
+                logger.error(
                     "Connection Error to the specified URL! \n"
                     "Error is: \n"
                     f"{str(e)}"
@@ -359,24 +368,24 @@ class ResourceLocker:
                     # We want to continuously show this message, in order to avoid iteration, and waste the attempts
                     # on connection errors.
                     while True:
-                        print(
-                            f"Will try again in {interval} seconds \n"
-                            "NOTE: Timeout duration is paused! \n"
+                        logger.info(
+                            f"Will try again in {interval} seconds. NOTE: Timeout duration is paused! "
                             "You decided to wait if connection errors will occur, your queue "
-                            f"will still have a timeout of {(attempts - attempt) * interval} seconds, once the resource locker server is back!"
+                            f"will still have a timeout of {(attempts - attempt) * interval} seconds,"
+                            "once the resource locker server is back!"
                         )
                         time.sleep(interval)
                         try:
                             self.check_connection()
                             # If method did not raise, get out, server is up
                             break
-                        except:
+                        except Exception:
                             pass
                 else:
                     raise
             except Exception as e:
-                print("An unknown exception occured: \n"
-                      f"{str(e)}")
+                logger.error("An unknown exception occured: \n"
+                             f"{str(e)}")
                 raise
 
         else:
@@ -389,7 +398,7 @@ class ResourceLocker:
                     f"Time Waited: {attempts * interval} seconds",
                 )
             if silent:
-                print("Timeout reached, silent=true provided so no exception is raised")
+                logger.warning("Timeout reached, silent=true provided so no exception is raised")
                 return None
             else:
                 raise Exception(
@@ -462,9 +471,9 @@ class ResourceLocker:
 
             req = requests.put(final_endpoint, headers=self.headers, data=data_json)
             if not suppress_logs:
-                pp.pprint(req.json())
+                logger.debug(pprint.pformat(req.json()))
             return req
 
-        print(f"Something went wrong beating {queue_id} \n")
-        pp.pprint(req.text)
+        logger.error(f"Something went wrong beating {queue_id}")
+        logger.debug(pprint.pformat(req.text))
         return req
