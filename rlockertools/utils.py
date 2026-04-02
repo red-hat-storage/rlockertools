@@ -1,5 +1,8 @@
-import pprint as pp
+import logging
+import pprint
 import json
+
+logger = logging.getLogger(__name__)
 
 
 def prettify_output(text):
@@ -9,9 +12,10 @@ def prettify_output(text):
     :return:
     """
     try:
-        pp.pprint(json.loads(text.encode("utf8")))
-    except:
-        print(text)
+        logger.info(pprint.pformat(json.loads(text.encode("utf8"))))
+    except Exception:
+        logger.info(text)
+
 
 def parse_queue_data(data_section):
     """

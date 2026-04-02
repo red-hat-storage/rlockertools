@@ -3,11 +3,19 @@ import os
 import signal
 import pprint as pp
 import time
+import logging
 from urllib.parse import quote
 from requests.exceptions import ConnectionError
 from argparse import ArgumentParser
 from rlockertools.resourcelocker import ResourceLocker
 import sys
+
+# Configure logging for the rlockertools library
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
 def init_argparser():
@@ -43,8 +51,10 @@ def init_argparser():
         "--check", help="Use this to check if a resource is available", action="store_true"
     )
     parser.add_argument(
-        "--resume-on-connection-error", help="Use this argument in case you don't want to break queue execution"
-                                             " in the middle of waiting for queue status being FINISHED", action="store_true"
+        "--resume-on-connection-error", help=(
+            "Use this argument in case you don't want to break queue execution"
+            " in the middle of waiting for queue status being FINISHED"
+        ), action="store_true"
     )
     parser.add_argument(
         "--signoff",
@@ -154,7 +164,7 @@ def run(args):
                 print(f"by name: {json.dumps(resources_by_name)}")
                 print(f"by label: {json.dumps(resources_by_label)}")
             else:
-                print(f"No resource available.")
+                print("No resource available.")
                 sys.exit(3)
 
     except (ConnectionError) as e:
@@ -171,9 +181,10 @@ def run(args):
             print("You chose to NOT continue on connection errors. \n"
                   "To prevent this, you can run next time with --resume-on-connection-error! \n"
                   "Exiting ... ")
-    except Exception as e:
+    except Exception:
         print("An unexpected error occured!")
         raise
+
 
 def main():
     os.environ["PYTHONUNBUFFERED"] = "1"
