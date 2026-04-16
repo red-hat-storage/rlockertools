@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rlockertools"
+version = "0.4.7"
+description = "Useful tools to interact with Resource Locker Project"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = "MIT"
+authors = [
+    {name = "Jim Erginbash", email = "jimshapedcoding@gmail.com"},
+    {name = "Daniel Horak", email = "dahorak@redhat.com"}
+]
+keywords = ["Rlocker", "rlocker", "ResourceLocker", "Python 3", "Resource Locker"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/red-hat-storage/rlockertools.git"
+Download = "https://pypi.org/project/rlockertools/"
+Repository = "https://github.com/red-hat-storage/rlockertools.git"
+
+[project.scripts]
+rlock = "framework.main:main"
+
+[tool.setuptools]
+packages = ["framework", "rlockertools"]
