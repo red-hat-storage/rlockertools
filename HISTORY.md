@@ -50,3 +50,7 @@ Fixing JSON parsing for the data section in a queue, which was not fixed totally
 ## [0.4.6] - 2026-02-18
 
 Limit the output from rlock when waiting for resource
+
+## [0.4.7] - 2026-04-16
+
+update intervals when waiting for resource, use python logging module instead of direct print
