@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class ResourceLocker:
-    def __init__(self, instance_url, token, max_retries=3, retry_delay=1):
+    def __init__(self, instance_url, token, max_retries=3, retry_delay=1, default_timeout=30):
         self.instance_url = instance_url
         self.token = token
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.default_timeout = default_timeout
 
         self.check_connection()
 
@@ -39,9 +40,11 @@ class ResourceLocker:
 
         :param url: URL to make GET request to
         :param headers: Optional headers dictionary
-        :param timeout: Optional timeout value
+        :param timeout: Optional timeout value (defaults to self.default_timeout if None)
         :return: requests.Response object
         """
+        if timeout is None:
+            timeout = self.default_timeout
         last_response = None
         for attempt in range(self.max_retries):
             try:
@@ -94,6 +97,8 @@ class ResourceLocker:
         :param timeout:
         :return:
         """
+        if timeout is None:
+            timeout = self.default_timeout
         final_endpoint = self.endpoints["retrieve_resource"] + search_string
         data = {
             "priority": priority,
@@ -128,7 +133,7 @@ class ResourceLocker:
         final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
-        req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        req = requests.put(final_endpoint, headers=self.headers, data=newjson, timeout=self.default_timeout)
         return req
 
     def release(self, resource):
@@ -143,7 +148,7 @@ class ResourceLocker:
         final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
-        req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        req = requests.put(final_endpoint, headers=self.headers, data=newjson, timeout=self.default_timeout)
         if req.status_code == 200:
             logger.info(f"Released {resource['name']} successfully!")
             return req
@@ -192,7 +197,7 @@ class ResourceLocker:
                 }
             )
 
-            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json, timeout=self.default_timeout)
             logger.debug(pprint.pformat(req.json()))
             return req
 
@@ -228,7 +233,7 @@ class ResourceLocker:
             to_modify["data"] = data_section
 
             data_json = json.dumps(to_modify)
-            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json, timeout=self.default_timeout)
             logger.debug(pprint.pformat(req.json()))
             return req
 
@@ -446,7 +451,7 @@ class ResourceLocker:
         final_endpoint = self.endpoints["resource"] + lockable_resource["name"]
         newjson = json.dumps(lockable_resource)
 
-        req = requests.put(final_endpoint, headers=self.headers, data=newjson)
+        req = requests.put(final_endpoint, headers=self.headers, data=newjson, timeout=self.default_timeout)
         return req
 
     def beat_queue(self, queue_id, suppress_logs=False):
@@ -469,7 +474,7 @@ class ResourceLocker:
 
             data_json = json.dumps(data)
 
-            req = requests.put(final_endpoint, headers=self.headers, data=data_json)
+            req = requests.put(final_endpoint, headers=self.headers, data=data_json, timeout=self.default_timeout)
             if not suppress_logs:
                 logger.debug(pprint.pformat(req.json()))
             return req
