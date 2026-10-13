@@ -54,3 +54,13 @@ Limit the output from rlock when waiting for resource
 ## [0.4.7] - 2026-04-16
 
 update intervals when waiting for resource, use python logging module instead of direct print
+
+## [0.4.8] - 2026-10-13
+
+**Critical bugfix**: Added HTTP request timeouts to prevent rlock from hanging indefinitely
+
+- Added `default_timeout` parameter (30 seconds) to ResourceLocker class
+- All HTTP GET and PUT requests now have proper timeouts configured
+- Prevents infinite hangs when server becomes unresponsive or network connection drops
+- Enables `--resume-on-connection-error` to work correctly by detecting timeouts
+- Fixes issue where rlock processes would hang for days waiting for unresponsive servers

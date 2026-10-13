@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rlockertools"
-version = "0.4.7"
+version = "0.4.8"
 description = "Useful tools to interact with Resource Locker Project"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"
